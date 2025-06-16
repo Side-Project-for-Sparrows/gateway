@@ -11,6 +11,6 @@ import (
 func main() {
 	r := router.NewRouter()
 
-	fmt.Println("? Gateway server is running on port 80...")
-	log.Fatal(http.ListenAndServe(":80", r))
+	fmt.Println("? Gateway server is running on port 7080...")
+	log.Fatal(http.ListenAndServe(":7080", r))
 }

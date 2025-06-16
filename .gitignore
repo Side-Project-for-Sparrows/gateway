@@ -20,6 +20,8 @@
 # Go workspace file
 go.work
 go.work.sum
+.DS_Store
+.vscode/
 
 # env file
 .env

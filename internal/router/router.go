@@ -6,7 +6,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func NewRouter() *mux.Router {
+func InitRoute() *mux.Router {
 	r := mux.NewRouter()
 
 	api := r.PathPrefix("/").Subrouter()

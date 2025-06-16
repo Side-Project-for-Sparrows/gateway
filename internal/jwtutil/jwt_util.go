@@ -9,15 +9,15 @@ import (
 )
 
 var (
-	secretKey       = []byte("your-secret-key")
+	secretKey       = []byte("secret-key")
 	expirationTime  = 10 * time.Minute
 	errTokenExpired = errors.New("access token expired")
 	errTokenInvalid = errors.New("access token invalid or unexpected")
 )
 
-func GenerateToken(userID int64) (string, error) {
+func GenerateToken(userID int64, expirationTime time.Duration) (string, error) {
 	claims := jwt.RegisteredClaims{
-		Subject:   string(rune(userID)),
+		Subject:   strconv.FormatInt(userID, 10),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(expirationTime)),
 	}

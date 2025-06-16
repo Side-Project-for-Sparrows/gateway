@@ -1,0 +1,11 @@
+env: stg
+
+routes:
+  dev:
+    board: http://localhost:8080
+    school: http://localhost:8080
+    search: http://localhost:8080
+  stg:
+    board: board-service
+    school: school-service
+    search: search-service

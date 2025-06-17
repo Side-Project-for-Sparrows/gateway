@@ -6,6 +6,6 @@ routes:
     school: http://localhost:8080
     search: http://192.168.0.17:8080
   stg:
-    board: board:8080
-    school: school:8080
-    search: search:8080
+    board: http://board:8080
+    school: http://school:8080
+    search: http://search:8080

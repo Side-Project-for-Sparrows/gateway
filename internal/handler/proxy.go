@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -13,6 +14,7 @@ import (
 
 func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	targetURL, _ := resolveTargetURL(r.URL.Path)
+	fmt.Println("call target : " + targetURL)
 	req, err := http.NewRequest(r.Method, targetURL, r.Body)
 	if err != nil {
 		http.Error(w, "failed to create request", http.StatusInternalServerError)
@@ -24,7 +26,9 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		http.Error(w, "backend unavailable", http.StatusBadGateway)
+		errMsg := fmt.Sprintf("backend unreachable: %v", err)
+		fmt.Println(errMsg)
+		http.Error(w, errMsg, http.StatusBadGateway)
 		return
 	}
 	defer resp.Body.Close()

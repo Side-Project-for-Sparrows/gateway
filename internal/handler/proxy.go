@@ -82,6 +82,8 @@ func resolveTargetURL(path string) (string, bool) {
 
 	var base string
 	switch {
+	case strings.HasPrefix(path, "/user"):
+		base = routes.User
 	case strings.HasPrefix(path, "/board"):
 		base = routes.Board
 	case strings.HasPrefix(path, "/post"):

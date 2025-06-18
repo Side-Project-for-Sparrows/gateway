@@ -7,6 +7,7 @@ import (
 )
 
 type RouteConfig struct {
+	User   string `mapstructure:"user"`
 	Board  string `mapstructure:"board"`
 	School string `mapstructure:"school"`
 	Search string `mapstructure:"search"`

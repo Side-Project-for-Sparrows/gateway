@@ -10,6 +10,7 @@ import (
 )
 
 func main() {
+
 	config.InitConfig()
 
 	r := router.InitRoute()

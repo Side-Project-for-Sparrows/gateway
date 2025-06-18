@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -77,7 +78,11 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func resolveTargetURL(path string) (string, bool) {
-	env := config.Conf.Env
+	env := os.Getenv("ENV")
+	if env == "" {
+		env = "dev" // default fallback
+	}
+
 	routes := config.Conf.Routes[env]
 
 	var base string

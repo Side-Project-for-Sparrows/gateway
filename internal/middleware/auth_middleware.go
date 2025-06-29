@@ -8,9 +8,10 @@ import (
 )
 
 var excludedPaths = map[string]bool{
-	"/api/auth/login": true,
-	"/api/auth/join":  true,
-	"/dummy":          true,
+	"/user/auth/login": true,
+	"/user/auth/join":  true,
+	"/index/school":    true,
+	"/dummy":           true,
 }
 
 func JWTAuthMiddleware(next http.Handler) http.Handler {

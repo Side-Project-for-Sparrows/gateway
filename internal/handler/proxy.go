@@ -48,7 +48,7 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(resp.StatusCode)
 
-	if r.URL.Path == "/user/auth/login" || r.URL.Path == "/user/auth/join" || strings.HasPrefix(r.URL.Path, "/index") {
+	if r.URL.Path == "/user/auth/login" || r.URL.Path == "/user/auth/join" {
 		var respMap map[string]any
 		if err := json.Unmarshal(bodyBytes, &respMap); err != nil {
 			http.Error(w, "failed to parse response", http.StatusInternalServerError)

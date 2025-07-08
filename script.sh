@@ -1,6 +1,8 @@
 #!/bin/bash
 
-set -e //immediate exit when error occurs
+set -e //immediate exit when error 
+
+brew install go
 
 DEBUG_MODE=false
 if [ "$1" == "-d" ]; then

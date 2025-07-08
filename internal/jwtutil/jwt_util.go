@@ -1,55 +1,91 @@
 package jwtutil
 
 import (
-	"errors"
-	"strconv"
 	"time"
-
+	"crypto/rsa"
+	"crypto/x509"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
 	"github.com/golang-jwt/jwt/v5"
+	"encoding/pem"
 )
 
 var (
 	secretKey       = []byte("secret-key")
 	expirationTime  = 10 * time.Minute
-	errTokenExpired = errors.New("access token expired")
-	errTokenInvalid = errors.New("access token invalid or unexpected")
+	ErrTokenExpired = errors.New("access token expired")
+	ErrTokenInvalid = errors.New("access token invalid or unexpected")
+	PublicKey *rsa.PublicKey
+	publicKeyURL = "http://localhost:8080/token/publicKey"
 )
 
-func GenerateToken(userID int64, expirationTime time.Duration) (string, error) {
-	claims := jwt.RegisteredClaims{
-		Subject:   strconv.FormatInt(userID, 10),
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(expirationTime)),
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(secretKey)
-}
-
 func VerifyToken(tokenString string) (int64, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (any, error) {
-		return secretKey, nil
+	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+		// 서명 알고리즘 체크
+		if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
+			return nil, ErrTokenInvalid
+		}
+		return PublicKey, nil
 	})
 
 	if err != nil {
-
 		if errors.Is(err, jwt.ErrTokenExpired) {
-			return 0, errTokenExpired
+			return 0, ErrTokenExpired
 		}
-		return 0, errTokenInvalid
+		return 0, ErrTokenInvalid
 	}
 
-	if claims, ok := token.Claims.(*jwt.RegisteredClaims); ok && token.Valid {
-		userID, parseErr := parseUserID(claims.Subject)
-		if parseErr != nil {
-			return 0, errTokenInvalid
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		sub, ok := claims["sub"].(string)
+		if !ok {
+			return 0, ErrTokenInvalid
+		}
+		var userID int64
+		_, err := fmt.Sscan(sub, &userID)
+		if err != nil {
+			return 0, ErrTokenInvalid
 		}
 		return userID, nil
 	}
 
-	return 0, errTokenInvalid
+	return 0, ErrTokenInvalid
 }
 
-func parseUserID(subject string) (int64, error) {
-	return strconv.ParseInt(subject, 10, 64)
+
+func FetchAndParsePublicKey() (*rsa.PublicKey, error) {
+	resp, err := http.Get(publicKeyURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch public key: %w", err)
+	}
+	defer resp.Body.Close()
+
+	keyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read public key body: %w", err)
+	}
+
+	pubKey, err := ParseRSAPublicKeyFromPEM(keyBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse PEM public key: %w", err)
+	}
+
+	return pubKey, nil
+}
+
+func ParseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
+	block, _ := pem.Decode(pemBytes)
+	if block == nil || block.Type != "PUBLIC KEY" {
+		return nil, errors.New("failed to decode PEM block containing public key")
+	}
+	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	rsaPub, ok := pub.(*rsa.PublicKey)
+	if !ok {
+		return nil, errors.New("not RSA public key")
+	}
+	return rsaPub, nil
 }

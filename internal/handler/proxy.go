@@ -1,16 +1,12 @@
 package handler
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"strings"
-	"time"
-
 	"github.com/Side-Project-for-Sparrows/gateway/config"
-	"github.com/Side-Project-for-Sparrows/gateway/internal/jwtutil"
 )
 
 func ProxyHandler(w http.ResponseWriter, r *http.Request) {
@@ -47,33 +43,6 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(resp.StatusCode)
-
-	if r.URL.Path == "/user/auth/login" || r.URL.Path == "/user/auth/join" {
-		var respMap map[string]any
-		if err := json.Unmarshal(bodyBytes, &respMap); err != nil {
-			http.Error(w, "failed to parse response", http.StatusInternalServerError)
-			return
-		}
-
-		userIDFloat, ok := respMap["id"].(float64)
-		if !ok {
-			http.Error(w, "userId missing or invalid", http.StatusInternalServerError)
-			return
-		}
-		accessToken, err := jwtutil.GenerateToken(int64(userIDFloat), 10*time.Minute)
-		if err != nil {
-			http.Error(w, "failed to generate token", http.StatusInternalServerError)
-			return
-		}
-
-		respMap["accessToken"] = accessToken
-		respMap["refreshToken"] = "dummy-refresh-token"
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(respMap)
-		return
-	}
-
 	w.Write(bodyBytes)
 }
 

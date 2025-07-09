@@ -64,25 +64,28 @@ func VerifyToken(tokenString string) (int64, error) {
 	return 0, ErrTokenInvalid
 }
 
+func fetchAndParse(env string){
+	log.Print("[DEBUG] 공개키 polling 시작")
+	keyBytes, err := fetchPublicKeyPEM(env)
+	if err != nil {
+		log.Printf("[WARN] 공개키 불러오기 실패: %v", err)
+	}
+
+	pubKey, err := parseRSAPublicKeyFromPEM(keyBytes)
+	if err != nil {
+		log.Printf("[WARN] 공개키 파싱 실패: %v", err)
+	}
+
+	atomicKey.Store(pubKey)
+	log.Print("[INFO] 공개키 갱신 성공")
+}
+
 func Initialize(env string){
+	fetchAndParse(env)
+	
 	go func(){
 		for {
-			log.Print("[DEBUG] 공개키 polling 시작")
-			keyBytes, err := fetchPublicKeyPEM(env)
-			if err != nil {
-				log.Printf("[WARN] 공개키 불러오기 실패: %v", err)
-				continue
-			}
-
-			pubKey, err := parseRSAPublicKeyFromPEM(keyBytes)
-			if err != nil {
-				log.Printf("[WARN] 공개키 파싱 실패: %v", err)
-				continue
-			}
-
-			atomicKey.Store(pubKey)
-			log.Print("[INFO] 공개키 갱신 성공")
-
+			fetchAndParse(env)
 			time.Sleep(1 * time.Minute)
 		}
 	}()

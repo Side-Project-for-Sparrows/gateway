@@ -2,7 +2,6 @@ package config
 
 import (
 	"log"
-
 	"github.com/spf13/viper"
 )
 
@@ -14,8 +13,13 @@ type RouteConfig struct {
 }
 
 type AppConfig struct {
-	Env    string                 `mapstructure:"env"`
+	Env    string
 	Routes map[string]RouteConfig `mapstructure:"routes"`
+	JwtConfig map[string]JwtConfig `mapstructure:"jwt"`
+}
+
+type JwtConfig struct{
+	PublicKeyUrl string `mapstructure:"publicKeyUrl"`
 }
 
 var Conf AppConfig

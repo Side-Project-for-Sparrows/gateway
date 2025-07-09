@@ -1,6 +1,8 @@
 #!/bin/bash
 
-set -e //immediate exit when error occurs
+set -e //immediate exit when error 
+
+brew install go
 
 DEBUG_MODE=false
 if [ "$1" == "-d" ]; then
@@ -22,6 +24,6 @@ if $DEBUG_MODE; then
   echo "debug mode init..."
   dlv debug main.go
 else
-  go run main.go
+  ENV=dev go run main.go
 fi
 

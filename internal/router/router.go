@@ -13,7 +13,6 @@ func InitRoute() *mux.Router {
 	api.Use(middleware.JWTAuthMiddleware)
 	api.Use(middleware.TIDMiddleware)
 
-	api.PathPrefix("/dummy").HandlerFunc(handler.DummyHandler)
 	api.PathPrefix("/").HandlerFunc(handler.ProxyHandler)
 
 	return r

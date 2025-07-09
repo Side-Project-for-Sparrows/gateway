@@ -1,11 +1,18 @@
 routes:
   dev:
-    board: http://localhost:8080
-    school: http://localhost:8080
-    search: http://localhost:8080
     user: http://localhost:8080
+    school: http://localhost:8081
+    board: http://localhost:8082
+    search: http://localhost:8083
   stg:
-    board: http://board:8080
-    school: http://school:8080
-    search: http://search:8080
     user: http://user:8080
+    school: http://school:8080
+    board: http://board:8080
+    search: http://search:8080
+    
+
+jwt:
+  dev:
+    publicKeyUrl: http://localhost:8080/token/publicKey
+  stg:
+    publicKeyUrl: http://user:8080/token/publicKey

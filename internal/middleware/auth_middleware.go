@@ -10,6 +10,7 @@ import (
 var excludedPaths = map[string]bool{
 	"/user/auth/login": true,
 	"/user/auth/join":  true,
+	"/user/auth/refresh": true,
 	"/index/school":    true,
 	"/dummy":           true,
 }

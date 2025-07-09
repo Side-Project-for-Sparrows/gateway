@@ -10,6 +10,9 @@ import (
 	"net/http"
 	"github.com/golang-jwt/jwt/v5"
 	"encoding/pem"
+	"github.com/Side-Project-for-Sparrows/gateway/config"
+	"log"
+	"sync/atomic"
 )
 
 var (
@@ -17,8 +20,9 @@ var (
 	expirationTime  = 10 * time.Minute
 	ErrTokenExpired = errors.New("access token expired")
 	ErrTokenInvalid = errors.New("access token invalid or unexpected")
-	PublicKey *rsa.PublicKey
-	publicKeyURL = "http://localhost:8080/token/publicKey"
+	ErrPublicKeyInvalid = errors.New("public key invalid or unexpected")
+	atomicKey atomic.Value
+	//PublicKey *rsa.PublicKey
 )
 
 func VerifyToken(tokenString string) (int64, error) {
@@ -27,7 +31,14 @@ func VerifyToken(tokenString string) (int64, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, ErrTokenInvalid
 		}
-		return PublicKey, nil
+		keyAny := atomicKey.Load()
+		if keyAny == nil{
+			return 0, ErrPublicKeyInvalid
+		}
+
+		publicKey := keyAny.(*rsa.PublicKey)
+
+		return publicKey, nil
 	})
 
 	if err != nil {
@@ -53,28 +64,46 @@ func VerifyToken(tokenString string) (int64, error) {
 	return 0, ErrTokenInvalid
 }
 
+func Initialize(env string){
+	go func(){
+		for {
+			log.Print("[DEBUG] 공개키 polling 시작")
+			keyBytes, err := fetchPublicKeyPEM(env)
+			if err != nil {
+				log.Printf("[WARN] 공개키 불러오기 실패: %v", err)
+				continue
+			}
 
-func FetchAndParsePublicKey() (*rsa.PublicKey, error) {
-	resp, err := http.Get(publicKeyURL)
+			pubKey, err := parseRSAPublicKeyFromPEM(keyBytes)
+			if err != nil {
+				log.Printf("[WARN] 공개키 파싱 실패: %v", err)
+				continue
+			}
+
+			atomicKey.Store(pubKey)
+			log.Print("[INFO] 공개키 갱신 성공")
+
+			time.Sleep(1 * time.Minute)
+		}
+	}()
+}
+
+func fetchPublicKeyPEM(env string)([]byte, error){
+	log.Printf("[DEBUG] env: %s", env)
+	log.Printf("[DEBUG] full jwt config: %+v", config.Conf.JwtConfig)
+	log.Printf("[DEBUG] resolved URL: %s", config.Conf.JwtConfig[env].PublicKeyUrl)
+
+	resp, err := http.Get(config.Conf.JwtConfig[env].PublicKeyUrl)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch public key: %w", err)
 	}
 	defer resp.Body.Close()
-
 	keyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read public key body: %w", err)
-	}
-
-	pubKey, err := ParseRSAPublicKeyFromPEM(keyBytes)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse PEM public key: %w", err)
-	}
-
-	return pubKey, nil
+	return keyBytes, err
 }
 
-func ParseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
+func parseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
 	block, _ := pem.Decode(pemBytes)
 	if block == nil || block.Type != "PUBLIC KEY" {
 		return nil, errors.New("failed to decode PEM block containing public key")

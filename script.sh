@@ -24,6 +24,6 @@ if $DEBUG_MODE; then
   echo "debug mode init..."
   dlv debug main.go
 else
-  go run main.go
+  ENV=dev go run main.go
 fi
 

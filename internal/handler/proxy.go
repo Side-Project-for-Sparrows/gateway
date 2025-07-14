@@ -11,6 +11,9 @@ import (
 
 func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	targetURL, _ := resolveTargetURL(r.URL.Path)
+	if r.URL.RawQuery != "" {
+		targetURL += "?" + r.URL.RawQuery
+	}
 	fmt.Println("call target : " + targetURL)
 	req, err := http.NewRequest(r.Method, targetURL, r.Body)
 	if err != nil {

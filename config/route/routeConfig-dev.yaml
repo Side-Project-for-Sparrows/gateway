@@ -1,0 +1,4 @@
+user: http://localhost:8080
+school: http://localhost:8081
+board: http://localhost:8082
+search: http://localhost:8083

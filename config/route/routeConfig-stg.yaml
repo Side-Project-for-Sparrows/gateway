@@ -1,0 +1,4 @@
+user: http://user:8080
+school: http://school:8080
+board: http://board:8080
+search: http://search:8080

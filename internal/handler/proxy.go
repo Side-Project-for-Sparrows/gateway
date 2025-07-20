@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"github.com/Side-Project-for-Sparrows/gateway/config"
+	"github.com/Side-Project-for-Sparrows/gateway/config/route"
 )
 
 func ProxyHandler(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +55,7 @@ func resolveTargetURL(path string) (string, bool) {
 		env = "dev" // default fallback
 	}
 
-	routes := config.Conf.Routes[env]
+	routes := route.Config
 
 	var base string
 	switch {

@@ -10,10 +10,35 @@ import (
 	"net/http"
 	"github.com/golang-jwt/jwt/v5"
 	"encoding/pem"
-	"github.com/Side-Project-for-Sparrows/gateway/config"
 	"log"
 	"sync/atomic"
+	jwtConfig "github.com/Side-Project-for-Sparrows/gateway/config/jwt"
+	"github.com/Side-Project-for-Sparrows/gateway/lifecycle"
 )
+
+type jwtInitializer struct{}
+
+
+func init() {
+	lifecycle.Register(&jwtInitializer{})
+}
+
+func (j *jwtInitializer) Construct() error {
+	log.Println("[Construct] JWTUtil Initialize 호출")
+	Initialize()
+	return nil
+}
+
+func Initialize(){
+	fetchAndParse()
+	
+	go func(){
+		for {
+			fetchAndParse()
+			time.Sleep(1 * time.Minute)
+		}
+	}()
+}
 
 var (
 	secretKey       = []byte("secret-key")
@@ -64,9 +89,9 @@ func VerifyToken(tokenString string) (int64, error) {
 	return 0, ErrTokenInvalid
 }
 
-func fetchAndParse(env string){
+func fetchAndParse(){
 	log.Print("[DEBUG] 공개키 polling 시작")
-	keyBytes, err := fetchPublicKeyPEM(env)
+	keyBytes, err := fetchPublicKeyPEM()
 	if err != nil {
 		log.Printf("[WARN] 공개키 불러오기 실패: %v", err)
 	}
@@ -80,23 +105,12 @@ func fetchAndParse(env string){
 	log.Print("[INFO] 공개키 갱신 성공")
 }
 
-func Initialize(env string){
-	fetchAndParse(env)
-	
-	go func(){
-		for {
-			fetchAndParse(env)
-			time.Sleep(1 * time.Minute)
-		}
-	}()
-}
+func fetchPublicKeyPEM()([]byte, error){
+	var config = jwtConfig.Config
+	log.Printf("[DEBUG] full jwt config: %+v", config)
+	log.Printf("[DEBUG] resolved URL: %s", config.PublicKeyUrl)
 
-func fetchPublicKeyPEM(env string)([]byte, error){
-	log.Printf("[DEBUG] env: %s", env)
-	log.Printf("[DEBUG] full jwt config: %+v", config.Conf.JwtConfig)
-	log.Printf("[DEBUG] resolved URL: %s", config.Conf.JwtConfig[env].PublicKeyUrl)
-
-	resp, err := http.Get(config.Conf.JwtConfig[env].PublicKeyUrl)
+	resp, err := http.Get(config.PublicKeyUrl)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch public key: %w", err)

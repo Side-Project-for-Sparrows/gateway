@@ -1,23 +1,23 @@
 package jwtutil
 
 import (
-	"time"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
-	"github.com/golang-jwt/jwt/v5"
-	"encoding/pem"
 	"log"
+	"net/http"
 	"sync/atomic"
+	"time"
+
 	jwtConfig "github.com/Side-Project-for-Sparrows/gateway/config/jwt"
 	"github.com/Side-Project-for-Sparrows/gateway/lifecycle"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type jwtInitializer struct{}
-
 
 func init() {
 	lifecycle.Register(&jwtInitializer{})
@@ -29,10 +29,10 @@ func (j *jwtInitializer) Construct() error {
 	return nil
 }
 
-func Initialize(){
+func Initialize() {
 	fetchAndParse()
-	
-	go func(){
+
+	go func() {
 		for {
 			fetchAndParse()
 			time.Sleep(1 * time.Minute)
@@ -41,12 +41,12 @@ func Initialize(){
 }
 
 var (
-	secretKey       = []byte("secret-key")
-	expirationTime  = 10 * time.Minute
-	ErrTokenExpired = errors.New("access token expired")
-	ErrTokenInvalid = errors.New("access token invalid or unexpected")
+	secretKey           = []byte("secret-key")
+	expirationTime      = 10 * time.Minute
+	ErrTokenExpired     = errors.New("access token expired")
+	ErrTokenInvalid     = errors.New("access token invalid or unexpected")
 	ErrPublicKeyInvalid = errors.New("public key invalid or unexpected")
-	atomicKey atomic.Value
+	atomicKey           atomic.Value
 	//PublicKey *rsa.PublicKey
 )
 
@@ -57,7 +57,7 @@ func VerifyToken(tokenString string) (int64, error) {
 			return nil, ErrTokenInvalid
 		}
 		keyAny := atomicKey.Load()
-		if keyAny == nil{
+		if keyAny == nil {
 			return 0, ErrPublicKeyInvalid
 		}
 
@@ -89,7 +89,7 @@ func VerifyToken(tokenString string) (int64, error) {
 	return 0, ErrTokenInvalid
 }
 
-func fetchAndParse(){
+func fetchAndParse() {
 	log.Print("[DEBUG] 공개키 polling 시작")
 	keyBytes, err := fetchPublicKeyPEM()
 	if err != nil {
@@ -99,13 +99,13 @@ func fetchAndParse(){
 	pubKey, err := parseRSAPublicKeyFromPEM(keyBytes)
 	if err != nil {
 		log.Printf("[WARN] 공개키 파싱 실패: %v", err)
+	} else {
+		atomicKey.Store(pubKey)
+		log.Print("[INFO] 공개키 갱신 성공")
 	}
-
-	atomicKey.Store(pubKey)
-	log.Print("[INFO] 공개키 갱신 성공")
 }
 
-func fetchPublicKeyPEM()([]byte, error){
+func fetchPublicKeyPEM() ([]byte, error) {
 	var config = jwtConfig.Config
 	log.Printf("[DEBUG] full jwt config: %+v", config)
 	log.Printf("[DEBUG] resolved URL: %s", config.PublicKeyUrl)

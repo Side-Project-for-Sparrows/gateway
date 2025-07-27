@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
+
 	"github.com/Side-Project-for-Sparrows/gateway/config/route"
 )
 
@@ -23,7 +25,10 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 
 	req.Header = r.Header.Clone()
 
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		errMsg := fmt.Sprintf("backend unreachable: %v", err)
@@ -39,14 +44,8 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		http.Error(w, "failed to read backend response", http.StatusInternalServerError)
-		return
-	}
-
 	w.WriteHeader(resp.StatusCode)
-	w.Write(bodyBytes)
+	io.Copy(w, resp.Body)
 }
 
 func resolveTargetURL(path string) (string, bool) {

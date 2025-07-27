@@ -17,6 +17,8 @@ if $DEBUG_MODE; then
   fi
 fi
 
+go install golang.org/x/tools/gopls@latest
+
 echo "dependency install.."
 go mod tidy
 

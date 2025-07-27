@@ -40,7 +40,7 @@ func RateLimitMiddleware() middlewaretype.Middleware {
 
 func extractIP(input middlewaretype.MiddlewareInput) string {
 	h := input.Headers()
-	xff := h.Get("X-Forwarded-For") // 오타 있었음: Forwared ❌
+	xff := h.Get("X-Forwarded-For")
 
 	if xff != "" {
 		parts := strings.Split(xff, ",")

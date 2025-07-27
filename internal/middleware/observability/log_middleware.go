@@ -12,6 +12,7 @@ const (
 	TimeHeader = "X_TIME_COST"
 )
 
+// 큰 의미는 없으나 병렬체인이나 직렬체인 작동 확인을 위한 dummy middleware
 func LogMiddleware() middlewaretype.Middleware {
 	return func(input middlewaretype.MiddlewareInput) (*middlewaretype.HeaderPatch, error) {
 		start := time.Now()

@@ -10,10 +10,12 @@ func InitRoute() *mux.Router {
 	r := mux.NewRouter()
 
 	api := r.PathPrefix("/").Subrouter()
-	api.Use(middleware.JWTAuthMiddleware)
-	api.Use(middleware.TIDMiddleware)
+	api.Use(middleware.ParellelRootMiddlewareHandler)
+	//api.Use(middleware.SerialRootMiddlewareHandler)
 
-	api.PathPrefix("/").HandlerFunc(handler.ProxyHandler)
+	//미들웨어 실행시간 측정용 더미 핸들러
+	//api.PathPrefix("/dummy").HandlerFunc(handler.DummyHandler)
+	api.PathPrefix("/").HandlerFunc(handler.LoggingWrapper(handler.ProxyHandler))
 
 	return r
 }

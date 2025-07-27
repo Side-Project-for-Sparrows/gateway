@@ -2,10 +2,9 @@ package middlewaretype
 
 import (
 	"log"
-	"net/http"
 )
 
-// 미들웨어 체인 (순차적으로 실행되는 미들웨어 그룹)
+// 순차 실행 미들웨어 그룹
 type ChainedMiddleware struct {
 	middlewares []Middleware
 }
@@ -19,30 +18,32 @@ func (mc *ChainedMiddleware) AndThen(mw Middleware) *ChainedMiddleware {
 	return mc
 }
 
-func (mc *ChainedMiddleware) Execute(w http.ResponseWriter, r *http.Request) error {
+// 순차 실행하면서 HeaderPatch들을 수집
+func (mc *ChainedMiddleware) Execute(input MiddlewareInput) ([]*HeaderPatch, error) {
+	var patches []*HeaderPatch
+
 	for i, mw := range mc.middlewares {
-		if err := mw(w, r); err != nil {
+		patch, err := mw(input)
+		if err != nil {
 			log.Printf("[ChainedMiddleware] Middleware #%d failed: %v", i, err)
-			return err
+			return nil, err
+		}
+		if patch != nil {
+			patches = append(patches, patch)
 		}
 	}
-	return nil
+	return patches, nil
 }
 
-// MiddlewareChain을 하나의 MiddlewareFunc처럼 변환
+// 다른 체인에 조합되기 위해 여전히 필요
 func (mc *ChainedMiddleware) AsMiddleware() Middleware {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		return mc.Execute(w, r)
-	}
-}
-
-func (mc *ChainedMiddleware) AsHandler(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := mc.Execute(w, r); err != nil {
-			// error 처리 정책은 여기서 담당
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
+	return func(input MiddlewareInput) (*HeaderPatch, error) {
+		patches, err := mc.Execute(input)
+		if err != nil {
+			return nil, err
 		}
-		next.ServeHTTP(w, r)
-	})
+
+		// 여러 patch를 하나로 merge
+		return mergePatches(patches), nil
+	}
 }

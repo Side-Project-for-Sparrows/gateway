@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/Side-Project-for-Sparrows/gateway/config/route"
 )
@@ -25,9 +24,7 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 
 	req.Header = r.Header.Clone()
 
-	client := &http.Client{
-		Timeout: 5 * time.Second,
-	}
+	client := &http.Client{}
 
 	resp, err := client.Do(req)
 	if err != nil {

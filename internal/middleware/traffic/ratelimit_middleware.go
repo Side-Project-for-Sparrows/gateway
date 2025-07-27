@@ -18,32 +18,37 @@ var (
 )
 
 func RateLimitMiddleware() middlewaretype.Middleware {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		ip := getIpFrom(r)
+	return func(input middlewaretype.MiddlewareInput) (*middlewaretype.HeaderPatch, error) {
+		ip := extractIP(input)
+
 		if isOverRateLimit(ip) {
-			respMap := map[string]any{
-				"reason": "TOO MANY REQUEST",
-			}
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusTooManyRequests)
-			json.NewEncoder(w).Encode(respMap)
-			return fmt.Errorf("rate limit exceeded")
+			resp := map[string]any{"reason": "TOO MANY REQUEST"}
+			body, _ := json.Marshal(resp)
+
+			return &middlewaretype.HeaderPatch{
+				ResponseAdd: http.Header{
+					"Content-Type": []string{"application/json"},
+				},
+				ResponseStatusCode: http.StatusTooManyRequests,
+				ResponseBody:       body,
+			}, fmt.Errorf("rate limit exceeded")
 		}
 
-		//log.Printf("uner limit")
-		return nil
+		return nil, nil
 	}
 }
 
-func getIpFrom(r *http.Request) string {
-	xff := r.Header.Get("X-Forwared-For")
+func extractIP(input middlewaretype.MiddlewareInput) string {
+	h := input.Headers()
+	xff := h.Get("X-Forwarded-For") // 오타 있었음: Forwared ❌
+
 	if xff != "" {
 		parts := strings.Split(xff, ",")
 		return strings.TrimSpace(parts[0])
 	}
-	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	ip, _, err := net.SplitHostPort(input.RemoteAddr())
 	if err != nil {
-		return r.RemoteAddr
+		return input.RemoteAddr()
 	}
 	return ip
 }

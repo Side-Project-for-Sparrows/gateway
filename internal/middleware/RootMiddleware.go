@@ -91,27 +91,26 @@ func SerialRootMiddlewareHandler(next http.Handler) http.Handler {
 
 func ApplyPatches(r *http.Request, w http.ResponseWriter, patches []*middlewaretype.HeaderPatch) {
 	for _, p := range patches {
-		// 요청 헤더 추가
 		for key, values := range p.RequestAdd {
 			for _, v := range values {
 				r.Header.Add(key, v)
 			}
 		}
-		// 요청 헤더 삭제
+
 		for _, key := range p.RequestDelete {
 			r.Header.Del(key)
 		}
-		// 응답 헤더 추가
+
 		for key, values := range p.ResponseAdd {
 			for _, v := range values {
 				w.Header().Add(key, v)
 			}
 		}
-		// 응답 헤더 삭제
+
 		for _, key := range p.ResponseDelete {
 			w.Header().Del(key)
 		}
-		// context 값 추가
+
 		if len(p.ContextAdd) > 0 {
 			ctx := r.Context()
 			for k, v := range p.ContextAdd {

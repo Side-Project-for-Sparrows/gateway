@@ -35,7 +35,7 @@ func (mc *ChainedMiddleware) Execute(input MiddlewareInput) ([]*HeaderPatch, err
 	return patches, nil
 }
 
-// 다른 체인에 조합되기 위해 여전히 필요
+// 다른 체인에 조합되기 위함.
 func (mc *ChainedMiddleware) AsMiddleware() Middleware {
 	return func(input MiddlewareInput) (*HeaderPatch, error) {
 		patches, err := mc.Execute(input)

@@ -1,7 +1,6 @@
 package middlewaretype
 
 import (
-	"log"
 	"net/http"
 	"time"
 )
@@ -77,10 +76,6 @@ const (
 )
 
 func GenerateMiddlewareInput(r *http.Request) MiddlewareInput {
-
-	// Authorization 헤더 가져오기
-	log.Printf("[JWT] input.Path=%q", r.URL.Path)
-	log.Printf("[JWT] input.Path=%q", r.Header)
 
 	return MiddlewareInput{
 		ctx:        r.Context(),

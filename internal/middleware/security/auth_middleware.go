@@ -27,7 +27,7 @@ func JWTAuthMiddleware() middlewaretype.Middleware {
 
 		// Authorization 헤더 가져오기
 		log.Printf("[JWT] input.Path=%v", input.Path())
-		log.Printf("[JWT] input.Path=%q", input.Headers())
+		log.Printf("[JWT] input.HEADER=%q", input.Headers())
 		authHeader := input.Headers().Get("Authorization")
 		if !strings.HasPrefix(authHeader, "Bearer ") {
 			log.Print("엑세스토큰 없음")

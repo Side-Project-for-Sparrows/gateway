@@ -15,21 +15,20 @@ func RootMiddlewareHandler(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		input := middlewaretype.GenerateMiddlewareInput(r)
-		// 체인 생성
-		observeChain := middlewaretype.NewMiddlewareChain().
+
+		observeSerialChain := middlewaretype.NewMiddlewareChain().
 			AndThen(observability.TIDMiddleware()).
 			AndThen(observability.LogMiddleware())
 
-		parallel := middlewaretype.NewParallelChains().
+		parallelChain := middlewaretype.NewParallelChains().
 			AndThen(security.JWTAuthMiddleware()).
 			AndThen(traffic.RateLimitMiddleware())
 
-		// 직렬 + 병렬을 AsMiddleware()로 묶고, 마지막 직렬로 구성
+		// 직렬 + 병렬을 AsMiddleware()로 묶고, 직렬로 구성
 		fullChain := middlewaretype.NewMiddlewareChain().
-			AndThen(parallel.AsMiddleware()).
-			AndThen(observeChain.AsMiddleware())
+			AndThen(parallelChain.AsMiddleware()).
+			AndThen(observeSerialChain.AsMiddleware())
 
-		// Execute
 		patches, err := fullChain.Execute(input)
 		if err != nil {
 			log.Printf("[RootMiddleware] execution failed: %v", err)
@@ -37,10 +36,55 @@ func RootMiddlewareHandler(next http.Handler) http.Handler {
 			return
 		}
 
-		// Patch 적용
 		ApplyPatches(r, w, patches)
+		next.ServeHTTP(w, r)
+	})
+}
 
-		// 실제 핸들러 실행
+func ParellelRootMiddlewareHandler(next http.Handler) http.Handler {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		input := middlewaretype.GenerateMiddlewareInput(r)
+
+		//모든 미들웨어 병렬 구성
+		fullChain := middlewaretype.NewParallelChains().
+			AndThen(security.JWTAuthMiddleware()).
+			AndThen(traffic.RateLimitMiddleware()).
+			AndThen(observability.TIDMiddleware()).
+			AndThen(observability.LogMiddleware())
+
+		patches, err := fullChain.Execute(input)
+		if err != nil {
+			log.Printf("[RootMiddleware] execution failed: %v", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		ApplyPatches(r, w, patches)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func SerialRootMiddlewareHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		input := middlewaretype.GenerateMiddlewareInput(r)
+
+		// 모든 미들웨어를 직렬로 구성
+		fullChain := middlewaretype.NewMiddlewareChain().
+			AndThen(observability.TIDMiddleware()).
+			AndThen(observability.LogMiddleware()).
+			AndThen(security.JWTAuthMiddleware()).
+			AndThen(traffic.RateLimitMiddleware())
+
+		patches, err := fullChain.Execute(input)
+
+		if err != nil {
+			log.Printf("[RootMiddleware] execution failed: %v", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		ApplyPatches(r, w, patches)
 		next.ServeHTTP(w, r)
 	})
 }

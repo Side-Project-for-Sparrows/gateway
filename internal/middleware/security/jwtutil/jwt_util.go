@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -134,4 +135,14 @@ func parseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
 		return nil, errors.New("not RSA public key")
 	}
 	return rsaPub, nil
+}
+
+// jwt 인증 불필요 여부 확인
+func IsExcluded(path string) bool {
+	for _, excluded := range jwtConfig.Config.ExcludedPaths {
+		if strings.HasPrefix(path, excluded) {
+			return true
+		}
+	}
+	return false
 }

@@ -1,1 +1,7 @@
 publicKeyUrl: http://user:8080/token/publicKey
+excludedPaths:
+  - /user/auth/login
+  - /user/auth/join
+  - /user/auth/refresh
+  - /index/school
+  - /dummy

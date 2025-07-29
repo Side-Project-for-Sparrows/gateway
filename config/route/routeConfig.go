@@ -1,8 +1,6 @@
 package route
 
 import (
-	"fmt"
-	"github.com/spf13/viper"
 	"github.com/Side-Project-for-Sparrows/gateway/config"
 )
 
@@ -17,20 +15,9 @@ var Config RouteConfig
 
 type routeLoader struct{}
 
-func (r *routeLoader) Init(env string) error {
-	viper.SetConfigName("routeConfig-" + env)
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath("./config/route")
-
-	if err := viper.ReadInConfig(); err != nil {
-		return fmt.Errorf("route config read error: %w", err)
-	}
-	if err := viper.Unmarshal(&Config); err != nil {
-		return fmt.Errorf("route config unmarshal error: %w", err)
-	}
-
-	fmt.Printf("[DEBUG] Route config loaded: %+v\n", Config)
-	return nil
+func (r *routeLoader) Init() error {
+	return config.NewYamlConfig("routeConfig", "yaml", "./config/route").
+		Decode(&Config)
 }
 
 func init() {

@@ -64,7 +64,7 @@ func isOverRateLimit(ip string) bool {
 	rateLimitMap[ip] = ws.Refresh(t)
 
 	rate := ws.RateAt(t)
-	log.Printf("[RateLimit] IP=%s count=%d", ip, rate)
+	log.Printf("[RateLimit] IP=%s count=%d limit=%d", ip, rate, ratelimit.Config.Limit)
 
 	return rate >= ratelimit.Config.Limit
 }

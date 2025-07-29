@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Side-Project-for-Sparrows/gateway/config/ratelimit"
@@ -15,6 +16,7 @@ import (
 
 var (
 	rateLimitMap = make(map[string]*Windows)
+	mu           sync.Mutex
 )
 
 func RateLimitMiddleware() middlewaretype.Middleware {
@@ -67,4 +69,30 @@ func isOverRateLimit(ip string) bool {
 	log.Printf("[RateLimit] IP=%s count=%d", ip, rate)
 
 	return rate >= ratelimit.Config.Limit
+}
+
+func init() {
+	go startCleanupLoop()
+}
+
+func startCleanupLoop() {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		cleanupOldEntries()
+	}
+}
+
+func cleanupOldEntries() {
+	now := time.Now()
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	for key, win := range rateLimitMap {
+		if now.Sub(win.Curr.Time) > 2*time.Second {
+			delete(serviceRateLimitMap, key)
+		}
+	}
 }

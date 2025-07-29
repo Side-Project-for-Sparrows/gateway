@@ -23,7 +23,7 @@ func (pc *ParallelMiddleware) Execute(input MiddlewareInput) ([]*HeaderPatch, er
 	_, cancel := context.WithCancel(input.Ctx())
 	defer cancel()
 
-	patches := make([]*HeaderPatch, len(pc.middlewares)) // index-safe pre-allocated
+	patches := make([]*HeaderPatch, len(pc.middlewares))
 	errOnce := sync.Once{}
 	var errRet error
 	wg := sync.WaitGroup{}
@@ -43,7 +43,7 @@ func (pc *ParallelMiddleware) Execute(input MiddlewareInput) ([]*HeaderPatch, er
 				return
 			}
 
-			patches[idx] = patch // no race, index is goroutine-owned
+			patches[idx] = patch // mutex등 없이 race contition 방지하기 위해 배열로 저장
 		}(i, mw)
 	}
 
@@ -63,7 +63,7 @@ func (pc *ParallelMiddleware) Execute(input MiddlewareInput) ([]*HeaderPatch, er
 	return final, nil
 }
 
-// 병렬로 미들웨어 실행, patch 수집, 에러 처리
+// 락있는 구현
 func (pc *ParallelMiddleware) Execute1(input MiddlewareInput) ([]*HeaderPatch, error) {
 	_, cancel := context.WithCancel(input.Ctx())
 	defer cancel()

@@ -1,1 +1,2 @@
-limit: 10
+requestsPerSecond: 20
+windowSize: 1s

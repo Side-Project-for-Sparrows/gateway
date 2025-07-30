@@ -22,7 +22,8 @@ func RootMiddlewareHandler(next http.Handler) http.Handler {
 
 		parallelChain := middlewaretype.NewParallelChains().
 			AndThen(security.JWTAuthMiddleware()).
-			AndThen(traffic.RateLimitMiddleware())
+			AndThen(traffic.ClientRateLimitMiddleware()).
+			AndThen(traffic.ServiceRateLimitMiddleware())
 
 		// 직렬 + 병렬을 AsMiddleware()로 묶고, 직렬로 구성
 		fullChain := middlewaretype.NewMiddlewareChain().
@@ -49,7 +50,8 @@ func ParellelRootMiddlewareHandler(next http.Handler) http.Handler {
 		//모든 미들웨어 병렬 구성
 		fullChain := middlewaretype.NewParallelChains().
 			AndThen(security.JWTAuthMiddleware()).
-			AndThen(traffic.RateLimitMiddleware()).
+			AndThen(traffic.ClientRateLimitMiddleware()).
+			AndThen(traffic.ServiceRateLimitMiddleware()).
 			AndThen(observability.TIDMiddleware()).
 			AndThen(observability.LogMiddleware())
 
@@ -74,7 +76,8 @@ func SerialRootMiddlewareHandler(next http.Handler) http.Handler {
 			AndThen(observability.TIDMiddleware()).
 			AndThen(observability.LogMiddleware()).
 			AndThen(security.JWTAuthMiddleware()).
-			AndThen(traffic.RateLimitMiddleware())
+			AndThen(traffic.ClientRateLimitMiddleware()).
+			AndThen(traffic.ServiceRateLimitMiddleware())
 
 		patches, err := fullChain.Execute(input)
 

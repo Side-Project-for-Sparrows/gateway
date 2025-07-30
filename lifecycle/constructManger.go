@@ -1,4 +1,3 @@
-// lifecycle/manager.go
 package lifecycle
 
 import (

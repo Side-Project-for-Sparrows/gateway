@@ -6,12 +6,13 @@ import (
 	"net/http"
 
 	"github.com/Side-Project-for-Sparrows/gateway/internal/middleware/middlewaretype"
+	"github.com/Side-Project-for-Sparrows/gateway/internal/util"
 )
 
 // 서비스 이름은 "user-service" / "board-service" 같은 형식이라고 가정
 func HealthCheckMiddleware(hs *HealthStatus) middlewaretype.Middleware {
 	return func(input middlewaretype.MiddlewareInput) (*middlewaretype.HeaderPatch, error) {
-		serviceName := extractServiceFromPath(input.Path())
+		serviceName := util.ExtractServiceKey(input.Path())
 		if serviceName == "" {
 			// 어떤 서비스로 가는 요청인지 식별 불가 → 통과시킴
 			return nil, nil

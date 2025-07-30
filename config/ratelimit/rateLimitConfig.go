@@ -1,11 +1,14 @@
 package ratelimit
 
 import (
+	"time"
+
 	"github.com/Side-Project-for-Sparrows/gateway/config"
 )
 
 type RateLimitConfig struct {
-	Limit int `mapstructure:"limit"`
+	RequestsPerSecond float64       `mapstructure:"requestsPerSecond"`
+	WindowSize        time.Duration `mapstructure:"windowSize"`
 }
 
 var Config RateLimitConfig

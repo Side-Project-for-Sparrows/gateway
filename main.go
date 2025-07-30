@@ -17,7 +17,7 @@ func main() {
 
 func initialize() {
 	config.InitAll()
-	lifecycle.ConstructAll()
+	lifecycle.ConstructAll() // 병관아 또 까먹고 지우면 안돼. jwt util 초기화 여기서한다?
 }
 
 func route() {

@@ -31,8 +31,6 @@ func (j *jwtInitializer) Construct() error {
 }
 
 func Initialize() {
-	fetchAndParse()
-
 	go func() {
 		for {
 			fetchAndParse()

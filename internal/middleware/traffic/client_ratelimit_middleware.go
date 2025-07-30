@@ -7,26 +7,25 @@ import (
 	"net"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/Side-Project-for-Sparrows/gateway/config/ratelimit"
 	"github.com/Side-Project-for-Sparrows/gateway/internal/middleware/middlewaretype"
 )
 
-var (
-	rateLimitMap = make(map[string]*Windows)
-	mu           sync.Mutex
-)
+var ClientLimiter RateLimiter
 
-func RateLimitMiddleware() middlewaretype.Middleware {
+func init() {
+	ClientLimiter = *NewRateLimiter(10 * time.Second)
+}
+
+func ClientRateLimitMiddleware() middlewaretype.Middleware {
 	return func(input middlewaretype.MiddlewareInput) (*middlewaretype.HeaderPatch, error) {
 		ip := extractIP(input)
 
-		if isOverRateLimit(ip) {
+		if ClientLimiter.IsOverLimit(ip, time.Now()) {
+			log.Printf("[RateLimit] ip=%s blocked", ip)
 			resp := map[string]any{"reason": "TOO MANY REQUEST"}
 			body, _ := json.Marshal(resp)
-
 			return &middlewaretype.HeaderPatch{
 				ResponseAdd: http.Header{
 					"Content-Type": []string{"application/json"},
@@ -36,7 +35,7 @@ func RateLimitMiddleware() middlewaretype.Middleware {
 			}, fmt.Errorf("rate limit exceeded")
 		}
 
-		return nil, nil
+		return &middlewaretype.HeaderPatch{}, nil
 	}
 }
 
@@ -53,46 +52,4 @@ func extractIP(input middlewaretype.MiddlewareInput) string {
 		return input.RemoteAddr()
 	}
 	return ip
-}
-
-func isOverRateLimit(ip string) bool {
-	ws, exists := rateLimitMap[ip]
-	t := time.Now()
-
-	if !exists {
-		ws = newWindows(t)
-	}
-
-	rateLimitMap[ip] = ws.Refresh(t)
-
-	rate := ws.RateAt(t)
-	log.Printf("[RateLimit] IP=%s count=%d limit=%d", ip, rate, ratelimit.Config.Limit)
-
-	return rate >= ratelimit.Config.Limit
-}
-
-func init() {
-	go startCleanupLoop()
-}
-
-func startCleanupLoop() {
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		cleanupOldEntries()
-	}
-}
-
-func cleanupOldEntries() {
-	now := time.Now()
-
-	mu.Lock()
-	defer mu.Unlock()
-
-	for key, win := range rateLimitMap {
-		if now.Sub(win.Curr.Time) > 2*time.Second {
-			delete(serviceRateLimitMap, key)
-		}
-	}
 }

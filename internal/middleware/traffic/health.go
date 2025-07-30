@@ -2,6 +2,7 @@ package traffic
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -38,22 +39,21 @@ func StartHealthCheckLoop(hs *HealthStatus) {
 		defer ticker.Stop()
 
 		for range ticker.C {
-			// reflect 대신 명시적으로 순회
-			services := map[string]string{
-				"user":   route.Config.User,
-				"board":  route.Config.Board,
-				"school": route.Config.School,
-				"search": route.Config.Search,
-			}
-
-			for name, baseURL := range services {
+			for name, baseURL := range route.RouteMap {
 				healthURL := fmt.Sprintf("%s/healthz", baseURL)
 
+				log.Printf("HEL URL : %s", healthURL)
 				go func(svc string, url string) {
 					client := &http.Client{Timeout: 1 * time.Second}
 					resp, err := client.Get(url)
 					healthy := err == nil && resp.StatusCode == http.StatusOK
 					hs.Set(svc+"-service", healthy)
+					if !healthy {
+						log.Printf("[HealthCheck] %s is UNHEALTHY (err=%v)", svc, err)
+					} else {
+						log.Printf("[HealthCheck] %s is healthy", svc)
+					}
+
 				}(name, healthURL)
 			}
 		}

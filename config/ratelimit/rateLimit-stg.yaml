@@ -1,2 +1,7 @@
-requestsPerSecond: 20
-windowSize: 1s
+slidingWindow:
+  requestsPerSecond: 20
+  windowSize: 1s
+
+tokenBucket:
+  bucketCapacity: 100
+  bucketRefillRate: 20

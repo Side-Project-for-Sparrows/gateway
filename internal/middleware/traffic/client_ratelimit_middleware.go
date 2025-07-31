@@ -10,12 +10,13 @@ import (
 	"time"
 
 	"github.com/Side-Project-for-Sparrows/gateway/internal/middleware/middlewaretype"
+	"github.com/Side-Project-for-Sparrows/gateway/internal/middleware/traffic/slidingwindow"
 )
 
-var ClientLimiter RateLimiter
+var ClientLimiter Limiter
 
 func init() {
-	ClientLimiter = *NewRateLimiter(10 * time.Second)
+	ClientLimiter = slidingwindow.NewRateLimiter(10 * time.Second)
 }
 
 func ClientRateLimitMiddleware() middlewaretype.Middleware {

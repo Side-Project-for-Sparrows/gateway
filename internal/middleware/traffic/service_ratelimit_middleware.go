@@ -8,13 +8,14 @@ import (
 	"time"
 
 	"github.com/Side-Project-for-Sparrows/gateway/internal/middleware/middlewaretype"
+	"github.com/Side-Project-for-Sparrows/gateway/internal/middleware/traffic/tokenbucket"
 	"github.com/Side-Project-for-Sparrows/gateway/internal/util"
 )
 
-var ServiceLimiter RateLimiter
+var ServiceLimiter Limiter
 
 func init() {
-	ServiceLimiter = *NewRateLimiter(10 * time.Second)
+	ServiceLimiter = tokenbucket.NewRateLimiter(10 * time.Second)
 }
 
 func ServiceRateLimitMiddleware() middlewaretype.Middleware {

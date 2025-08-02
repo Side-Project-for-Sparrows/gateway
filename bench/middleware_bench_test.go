@@ -15,6 +15,7 @@ const (
 )
 
 func TestRealisticLatency(t *testing.T) {
+
 	v := 2
 	log.Print(v)
 

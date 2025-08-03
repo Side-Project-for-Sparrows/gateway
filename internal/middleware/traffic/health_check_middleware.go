@@ -10,7 +10,7 @@ import (
 )
 
 // 서비스 이름은 "user-service" / "board-service" 같은 형식이라고 가정
-func HealthCheckMiddleware(hs *HealthStatus) middlewaretype.Middleware {
+func HealthCheckMiddleware(hs *health.HealthStatus) middlewaretype.Middleware {
 	return func(input middlewaretype.MiddlewareInput) (*middlewaretype.HeaderPatch, error) {
 		serviceName := util.ExtractServiceKey(input.Path())
 		if serviceName == "" {

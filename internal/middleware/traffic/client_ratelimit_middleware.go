@@ -1,22 +1,30 @@
 package traffic
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net"
-	"net/http"
 	"strings"
 	"time"
 
+	"github.com/Side-Project-for-Sparrows/gateway/config"
 	"github.com/Side-Project-for-Sparrows/gateway/internal/middleware/middlewaretype"
 	"github.com/Side-Project-for-Sparrows/gateway/internal/middleware/traffic/slidingwindow"
 )
 
 var ClientLimiter Limiter
 
+type ClientRateLimiterInitializer struct{}
+
+func (c *ClientRateLimiterInitializer) Construct() error {
+	log.Println("[Construct] ClientRateLimiter Initialize 호출")
+
+	ClientLimiter = slidingwindow.NewRateLimiter()
+	return nil
+}
+
 func init() {
-	ClientLimiter = slidingwindow.NewRateLimiter(10 * time.Second)
+	config.Register(&ClientRateLimiterInitializer{})
 }
 
 func ClientRateLimitMiddleware() middlewaretype.Middleware {
@@ -25,15 +33,7 @@ func ClientRateLimitMiddleware() middlewaretype.Middleware {
 
 		if ClientLimiter.IsOverLimit(ip, time.Now()) {
 			log.Printf("[RateLimit] ip=%s blocked", ip)
-			resp := map[string]any{"reason": "TOO MANY REQUEST"}
-			body, _ := json.Marshal(resp)
-			return &middlewaretype.HeaderPatch{
-				ResponseAdd: http.Header{
-					"Content-Type": []string{"application/json"},
-				},
-				ResponseStatusCode: http.StatusTooManyRequests,
-				ResponseBody:       body,
-			}, fmt.Errorf("rate limit exceeded")
+			return &middlewaretype.HeaderPatch{}, fmt.Errorf("rate limit exceeded of client")
 		}
 
 		return &middlewaretype.HeaderPatch{}, nil

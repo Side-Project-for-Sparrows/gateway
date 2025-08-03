@@ -13,15 +13,15 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Side-Project-for-Sparrows/gateway/config"
 	jwtConfig "github.com/Side-Project-for-Sparrows/gateway/config/jwt"
-	"github.com/Side-Project-for-Sparrows/gateway/lifecycle"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type jwtInitializer struct{}
 
 func init() {
-	lifecycle.Register(&jwtInitializer{})
+	config.Register(&jwtInitializer{})
 }
 
 func (j *jwtInitializer) Construct() error {

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 )
 
@@ -11,6 +12,7 @@ func RegisterConfig(c Configurable) {
 }
 
 func InitAll() {
+	fmt.Print("INIT TOTAL START")
 	for _, loader := range configLoaders {
 		if err := loader.Init(); err != nil {
 			log.Fatalf("config init failed: %v", err)

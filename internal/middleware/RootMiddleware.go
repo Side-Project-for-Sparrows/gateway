@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -31,13 +32,13 @@ func RootMiddlewareHandler(next http.Handler) http.Handler {
 			AndThen(observeSerialChain.AsMiddleware())
 
 		patches, err := fullChain.Execute(input)
+
+		ApplyPatches(r, w, patches)
 		if err != nil {
 			log.Printf("[RootMiddleware] execution failed: %v", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-
-		ApplyPatches(r, w, patches)
 		next.ServeHTTP(w, r)
 	})
 }
@@ -56,13 +57,13 @@ func ParellelRootMiddlewareHandler(next http.Handler) http.Handler {
 			AndThen(observability.LogMiddleware())
 
 		patches, err := fullChain.Execute(input)
+
+		ApplyPatches(r, w, patches)
 		if err != nil {
 			log.Printf("[RootMiddleware] execution failed: %v", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-
-		ApplyPatches(r, w, patches)
 		next.ServeHTTP(w, r)
 	})
 }
@@ -81,13 +82,12 @@ func SerialRootMiddlewareHandler(next http.Handler) http.Handler {
 
 		patches, err := fullChain.Execute(input)
 
+		ApplyPatches(r, w, patches)
 		if err != nil {
 			log.Printf("[RootMiddleware] execution failed: %v", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-
-		ApplyPatches(r, w, patches)
 		next.ServeHTTP(w, r)
 	})
 }
@@ -106,6 +106,7 @@ func ApplyPatches(r *http.Request, w http.ResponseWriter, patches []*middlewaret
 
 		for key, values := range p.ResponseAdd {
 			for _, v := range values {
+				fmt.Printf("key : " + key + " value : " + v)
 				w.Header().Add(key, v)
 			}
 		}

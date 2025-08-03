@@ -5,6 +5,8 @@ import (
 	"log"
 	"sync"
 	"time"
+
+	"github.com/Side-Project-for-Sparrows/gateway/config/ratelimit"
 )
 
 type TokenBucketLimiter struct {
@@ -12,9 +14,9 @@ type TokenBucketLimiter struct {
 	interval time.Duration
 }
 
-func NewRateLimiter(cleanupInterval time.Duration) *TokenBucketLimiter {
+func NewRateLimiter() *TokenBucketLimiter {
 	lim := &TokenBucketLimiter{
-		interval: cleanupInterval,
+		interval: ratelimit.Config.TokenBucket.CleanInterval,
 	}
 	go lim.startCleanupLoop()
 	return lim

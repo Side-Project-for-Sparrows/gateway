@@ -1,9 +1,12 @@
 package slidingwindow
 
 import (
+	"fmt"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/Side-Project-for-Sparrows/gateway/config/ratelimit"
 )
 
 type SlidingWindowLimiter struct {
@@ -11,9 +14,12 @@ type SlidingWindowLimiter struct {
 	interval time.Duration
 }
 
-func NewRateLimiter(cleanupInterval time.Duration) *SlidingWindowLimiter {
+func NewRateLimiter() *SlidingWindowLimiter {
+	fmt.Printf("CLEAN INTERVAL: %+v\n", ratelimit.Config.TokenBucket.CleanInterval)
+	fmt.Printf("CLEAN INTERVAL: %+v\n", ratelimit.Config.SlidingWindow.CleanInterval)
+
 	s := &SlidingWindowLimiter{
-		interval: cleanupInterval,
+		interval: ratelimit.Config.SlidingWindow.CleanInterval,
 	}
 	go s.startCleanupLoop()
 	return s

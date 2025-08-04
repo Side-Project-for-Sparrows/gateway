@@ -6,7 +6,6 @@ import (
 )
 
 // 미들웨어 단위 (개별 미들웨어 함수 타입 정의)
-// type Middleware func(http.ResponseWriter, *http.Request) error
 type Middleware func(input MiddlewareInput) (*HeaderPatch, error)
 
 type HeaderPatch struct {
@@ -81,7 +80,7 @@ func GenerateMiddlewareInput(r *http.Request) MiddlewareInput {
 		ctx:        r.Context(),
 		method:     r.Method,
 		path:       r.URL.Path,
-		headers:    r.Header.Clone(), // 안전하게 복사
+		headers:    r.Header.Clone(),
 		remoteAddr: r.RemoteAddr,
 	}
 }

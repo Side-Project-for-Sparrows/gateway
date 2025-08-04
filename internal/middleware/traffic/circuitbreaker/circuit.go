@@ -1,49 +1,108 @@
 package circuitbreaker
 
-import "sync"
+import (
+	"container/list"
+	"math"
+	"net"
+	"strings"
+	"sync/atomic"
+	"time"
 
-type circuit struct {
-	name   string
-	status CircuitStatus
-	mu     sync.RWMutex
+	"github.com/Side-Project-for-Sparrows/gateway/config/circuitbreak"
+)
+
+type Event struct {
+	Timestamp int64
+	Success   bool
 }
 
-func NewCircuit(name string) *circuit {
-	return &circuit{name: name, status: CLOSED}
+type Circuit struct {
+	url        string
+	events     *list.List
+	state      atomic.Value
+	failCnt    atomic.Int32
+	scsCnt     atomic.Int32
+	gradeBits  atomic.Uint64
+	inProgress atomic.Bool
 }
 
-func (c *circuit) SetStatus(next CircuitStatus) bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	switch c.status {
-	case CLOSED:
-		if next == OPEN {
-			c.status = next
-			return true
-		}
-	case OPEN:
-		if next == HALF_OPEN {
-			c.status = next
-			return true
-		}
-	case HALF_OPEN:
-		if next == OPEN || next == CLOSED {
-			c.status = next
-			return true
-		}
+func NewCircuit(url string) *Circuit {
+	c := &Circuit{
+		url:    url,
+		events: list.New(),
 	}
-	return false
+
+	if strings.HasPrefix(c.url, "http://localhost:") {
+		c.url = strings.Replace(c.url, "http://localhost", "127.0.0.1", 1)
+	}
+
+	c.state.Store(&CircuitState{stateType: Closed})
+	c.failCnt.Store(0)
+	c.scsCnt.Store(0)
+	return c
 }
 
-func (c *circuit) Status() CircuitStatus {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.status
+func (c *Circuit) IsHealthy() bool {
+	return c.state.Load().(*CircuitState).IsHealthy()
 }
 
-func (c *circuit) IsHealthy() bool {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.status == CLOSED
+func (c *Circuit) Next() {
+	if !c.inProgress.CompareAndSwap(false, true) {
+		return
+	}
+	defer c.inProgress.Store(false)
+
+	_, err := net.DialTimeout("tcp", c.url, circuitbreak.Config.PingInterval)
+	success := err == nil
+	now := time.Now().Unix()
+
+	c.updateEventQ(success, now)
+
+	status := c.state.Load().(*CircuitState)
+	nextType := status.Next(c)
+	c.state.Store(&CircuitState{stateType: nextType})
+}
+
+func (c *Circuit) updateEventQ(success bool, now int64) {
+	c.pruneQ(now)
+	c.add(success, now)
+}
+
+func (c *Circuit) pruneQ(now int64) {
+	cutoff := now - int64(circuitbreak.Config.EventQueueSize.Seconds())
+	for e := c.events.Front(); e != nil; {
+		ev := e.Value.(Event)
+		if ev.Timestamp >= cutoff {
+			break
+		}
+		next := e.Next()
+		if ev.Success {
+			c.scsCnt.Add(-1)
+		} else {
+			c.failCnt.Add(-1)
+		}
+
+		c.events.Remove(e)
+		e = next
+	}
+}
+
+func (c *Circuit) add(success bool, now int64) {
+	c.events.PushBack(Event{Timestamp: now, Success: success})
+	grade := c.getGrade() * circuitbreak.Config.Weight
+	if success {
+		c.scsCnt.Add(1)
+		grade += 1
+	} else {
+		c.failCnt.Add(1)
+	}
+	c.setGrade(grade)
+}
+
+func (c *Circuit) setGrade(val float64) {
+	c.gradeBits.Store(math.Float64bits(val))
+}
+
+func (c *Circuit) getGrade() float64 {
+	return math.Float64frombits(c.gradeBits.Load())
 }

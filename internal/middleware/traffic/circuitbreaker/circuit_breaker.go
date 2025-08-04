@@ -1,33 +1,42 @@
 package circuitbreaker
 
 import (
-	"log"
-	"net"
+	"time"
 
 	"github.com/Side-Project-for-Sparrows/gateway/config/circuitbreak"
+	"github.com/Side-Project-for-Sparrows/gateway/config/route"
 )
 
-type circuitbreaker struct {
-	circuits map[string]*circuit
+type CircuitBreaker struct {
+	circuits map[string]*Circuit
 }
 
-func (c *circuitbreaker) IsHealthy(svc string) bool {
-	circuit := c.circuits[svc]
+func NewCircuitBreaker() CircuitBreaker {
+	cb := CircuitBreaker{
+		circuits: make(map[string]*Circuit),
+	}
+	for name, addr := range route.RouteMap {
+		cb.circuits[name] = NewCircuit(addr)
+	}
+	go cb.startPingLoop()
+	return cb
+}
+
+func (cb *CircuitBreaker) IsHealthy(svc string) bool {
+	circuit, ok := cb.circuits[svc]
+	if !ok {
+		return false
+	}
 	return circuit.IsHealthy()
 }
 
-func (c *circuitbreaker) ping(svc string) {
-	conn, err := net.DialTimeout("tcp", svc, circuitbreak.Config.PingInterval)
-	if err == nil {
-		conn.Close()
-	}
+func (cb *CircuitBreaker) startPingLoop() {
+	ticker := time.NewTicker(circuitbreak.Config.PingInterval)
+	defer ticker.Stop()
 
-	healthy := err == nil
-	circuit := c.circuits[svc].set
-	hs.Set(svc+"-service", healthy)
-	if !healthy {
-		log.Printf("[HealthCheck] %s is UNHEALTHY (err=%v)", svc, err)
-	} else {
-		log.Printf("[HealthCheck] %s is healthy", svc)
+	for range ticker.C {
+		for _, c := range cb.circuits {
+			c.Next()
+		}
 	}
 }

@@ -1,9 +1,5 @@
-slidingWindow:
-  requestsPerSecond: 2
-  windowSize: 1s
-  cleanInterval: 10s
-
-tokenBucket:
-  bucketCapacity: 10
-  bucketRefillRate: 2
-  cleanInterval: 10s
+pingInterval: 10s
+OpenTimeout: 10s
+FailureThreshold: 10
+eventQueueSize: 60s
+weight: 0.1

@@ -1,22 +1,82 @@
 package circuitbreaker
 
-type CircuitStatus int
-
-const (
-	CLOSED CircuitStatus = iota
-	OPEN
-	HALF_OPEN
+import (
+	"log"
+	"math/rand"
+	"time"
 )
 
-func (s CircuitStatus) String() string {
-	switch s {
-	case CLOSED:
-		return "CLOSED"
-	case OPEN:
-		return "OPEN"
-	case HALF_OPEN:
-		return "HALF_OPEN"
-	default:
-		return "UNKNOWN"
+type CircuitStatusType int
+
+const (
+	Closed CircuitStatusType = iota
+	Open
+	HalfOpen
+)
+
+var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+type CircuitState struct {
+	stateType CircuitStatusType
+}
+
+func (cs *CircuitState) Next(c *Circuit) CircuitStatusType {
+	if cs.stateType == Closed {
+		log.Printf("GRADE!!!!!!!!!!!!! %.4f", c.getGrade())
+
+		log.Printf("STATUS!!!!!!!!!!!!! CLOSED")
+
+		if c.getGrade() < float64(0.9) {
+			return Open
+		}
+		return Closed
 	}
+
+	if cs.stateType == Open {
+		log.Printf("GRADE!!!!!!!!!!!!! %.4f", c.getGrade())
+
+		log.Printf("STATUS!!!!!!!!!!!!! OPEN")
+
+		if c.getGrade() > float64(0.9) {
+			return HalfOpen
+		}
+		return Open
+	}
+
+	if cs.stateType == HalfOpen {
+		log.Printf("GRADE!!!!!!!!!!!!! %.4f", c.getGrade())
+
+		log.Printf("STATUS!!!!!!!!!!!!! HALF")
+
+		if c.getGrade() > float64(1) {
+			return Closed
+		}
+
+		if c.getGrade() < float64(0.9) {
+			return Open
+		}
+
+		return HalfOpen
+	}
+
+	return Open
+}
+
+func (cs *CircuitState) IsHealthy() bool {
+	if cs.stateType == Closed {
+		log.Printf("THIS IS CLOSE")
+		return true
+	}
+
+	if cs.stateType == Open {
+		log.Printf("THIS IS OPEN")
+		return false
+	}
+
+	if cs.stateType == HalfOpen {
+		log.Printf("THIS IS HALF")
+		return rnd.Intn(2) == 0 // 50% 확률로 true 반환
+	}
+
+	return false
 }

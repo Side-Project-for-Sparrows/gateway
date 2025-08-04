@@ -9,7 +9,7 @@ type ChainedMiddleware struct {
 	middlewares []Middleware
 }
 
-func NewMiddlewareChain() *ChainedMiddleware {
+func NewSerialMiddlewareChain() *ChainedMiddleware {
 	return &ChainedMiddleware{middlewares: []Middleware{}}
 }
 

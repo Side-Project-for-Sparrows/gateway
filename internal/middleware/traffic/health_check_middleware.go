@@ -1,37 +1,42 @@
 package traffic
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
+	"log"
 
+	"github.com/Side-Project-for-Sparrows/gateway/config"
 	"github.com/Side-Project-for-Sparrows/gateway/internal/middleware/middlewaretype"
+	"github.com/Side-Project-for-Sparrows/gateway/internal/middleware/traffic/circuitbreaker"
 	"github.com/Side-Project-for-Sparrows/gateway/internal/util"
 )
 
-// 서비스 이름은 "user-service" / "board-service" 같은 형식이라고 가정
-func HealthCheckMiddleware(hs *health.HealthStatus) middlewaretype.Middleware {
+var cb circuitbreaker.CircuitBreaker
+
+type CircuitBreakerInitializer struct{}
+
+func init() {
+	config.Register(&CircuitBreakerInitializer{})
+}
+
+func (c *CircuitBreakerInitializer) Construct() error {
+	log.Println("[Construct] ClientRateLimiter Initialize 호출")
+
+	cb = circuitbreaker.NewCircuitBreaker()
+	return nil
+}
+
+func CircuitBreakerMiddleware() middlewaretype.Middleware {
 	return func(input middlewaretype.MiddlewareInput) (*middlewaretype.HeaderPatch, error) {
 		serviceName := util.ExtractServiceKey(input.Path())
 		if serviceName == "" {
-			// 어떤 서비스로 가는 요청인지 식별 불가 → 통과시킴
-			return nil, nil
+			// 식별 불가 시 에러
+			return &middlewaretype.HeaderPatch{}, fmt.Errorf("circuit breaker: service %s is not found", serviceName)
 		}
 
-		// 서비스가 unhealthy인 경우 요청 차단
-		if !hs.IsHealthy(serviceName) {
-			body, _ := json.Marshal(map[string]string{
-				"reason": fmt.Sprintf("service %s is currently unhealthy", serviceName),
-			})
-
-			return &middlewaretype.HeaderPatch{
-				ResponseAdd:        http.Header{"Content-Type": []string{"application/json"}},
-				ResponseStatusCode: http.StatusServiceUnavailable,
-				ResponseBody:       body,
-			}, fmt.Errorf("service %s is unhealthy", serviceName)
+		if !cb.IsHealthy(serviceName) {
+			return &middlewaretype.HeaderPatch{}, fmt.Errorf("circuit breaker: service %s is unavailable", serviceName)
 		}
 
-		// 통과
 		return nil, nil
 	}
 }

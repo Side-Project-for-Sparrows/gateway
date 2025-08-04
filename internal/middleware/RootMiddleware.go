@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -17,19 +16,21 @@ func RootMiddlewareHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		input := middlewaretype.GenerateMiddlewareInput(r)
 
-		observeSerialChain := middlewaretype.NewMiddlewareChain().
-			AndThen(observability.TIDMiddleware()).
-			AndThen(observability.LogMiddleware())
-
-		parallelChain := middlewaretype.NewParallelChains().
-			AndThen(security.JWTAuthMiddleware()).
+		rateLimitMiddleware := middlewaretype.NewParallelChains().
 			AndThen(traffic.ClientRateLimitMiddleware()).
 			AndThen(traffic.ServiceRateLimitMiddleware())
 
-		// 직렬 + 병렬을 AsMiddleware()로 묶고, 직렬로 구성
-		fullChain := middlewaretype.NewMiddlewareChain().
-			AndThen(parallelChain.AsMiddleware()).
-			AndThen(observeSerialChain.AsMiddleware())
+		trafficMiddleware := middlewaretype.NewSerialMiddlewareChain().
+			AndThen(traffic.CircuitBreakerMiddleware()).
+			AndThen(rateLimitMiddleware.AsMiddleware())
+
+		validateMiddleware := middlewaretype.NewParallelChains().
+			AndThen(trafficMiddleware.AsMiddleware()).
+			AndThen(security.JWTAuthMiddleware())
+
+		fullChain := middlewaretype.NewSerialMiddlewareChain().
+			AndThen(validateMiddleware.AsMiddleware()).
+			AndThen(observability.TIDMiddleware())
 
 		patches, err := fullChain.Execute(input)
 
@@ -51,6 +52,7 @@ func ParellelRootMiddlewareHandler(next http.Handler) http.Handler {
 		//모든 미들웨어 병렬 구성
 		fullChain := middlewaretype.NewParallelChains().
 			AndThen(security.JWTAuthMiddleware()).
+			AndThen(traffic.CircuitBreakerMiddleware()).
 			AndThen(traffic.ClientRateLimitMiddleware()).
 			AndThen(traffic.ServiceRateLimitMiddleware()).
 			AndThen(observability.TIDMiddleware()).
@@ -73,7 +75,7 @@ func SerialRootMiddlewareHandler(next http.Handler) http.Handler {
 		input := middlewaretype.GenerateMiddlewareInput(r)
 
 		// 모든 미들웨어를 직렬로 구성
-		fullChain := middlewaretype.NewMiddlewareChain().
+		fullChain := middlewaretype.NewSerialMiddlewareChain().
 			AndThen(observability.TIDMiddleware()).
 			AndThen(observability.LogMiddleware()).
 			AndThen(security.JWTAuthMiddleware()).
@@ -106,7 +108,6 @@ func ApplyPatches(r *http.Request, w http.ResponseWriter, patches []*middlewaret
 
 		for key, values := range p.ResponseAdd {
 			for _, v := range values {
-				fmt.Printf("key : " + key + " value : " + v)
 				w.Header().Add(key, v)
 			}
 		}

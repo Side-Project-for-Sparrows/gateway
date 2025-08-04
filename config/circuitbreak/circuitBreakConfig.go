@@ -8,7 +8,11 @@ import (
 )
 
 type CircuitBreakConfig struct {
-	PingInterval time.Duration `mapstructure:"pingInterval"`
+	PingInterval     time.Duration `mapstructure:"pingInterval"`
+	OpenTimeout      time.Duration `mapstructure:"openTimeout"`
+	FailureThreshold int32         `mapstructure:"failureThreshold"`
+	EventQueueSize   time.Duration `mapstructure:"eventQueueSize"`
+	Weight           float64       `mapstructure:"weight"`
 }
 
 var Config CircuitBreakConfig

@@ -1,0 +1,5 @@
+pingInterval: 10s
+OpenTimeout: 10s
+FailureThreshold: 10
+eventQueueSize: 60s
+weight: 0.1

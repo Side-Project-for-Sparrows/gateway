@@ -4,14 +4,19 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/Side-Project-for-Sparrows/gateway/config/route"
 )
 
 func ProxyHandler(w http.ResponseWriter, r *http.Request) {
-	targetURL, _ := resolveTargetURL(r.URL.Path)
+	targetURL, ok := resolveTargetURL(r.URL.Path)
+
+	if !ok {
+		http.Error(w, "route to server failed", http.StatusInternalServerError)
+		return
+	}
+
 	if r.URL.RawQuery != "" {
 		targetURL += "?" + r.URL.RawQuery
 	}
@@ -46,28 +51,18 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func resolveTargetURL(path string) (string, bool) {
-	env := os.Getenv("ENV")
-	if env == "" {
-		env = "dev" // default fallback
+	// /user/login → user
+	segments := strings.Split(strings.TrimPrefix(path, "/"), "/")
+	if len(segments) == 0 {
+		return "", false
 	}
+	key := segments[0]
 
-	routes := route.Config
-
-	var base string
-	switch {
-	case strings.HasPrefix(path, "/user"):
-		base = routes.User
-	case strings.HasPrefix(path, "/board"):
-		base = routes.Board
-	case strings.HasPrefix(path, "/post"):
-		base = routes.Board
-	case strings.HasPrefix(path, "/school"):
-		base = routes.School
-	case strings.HasPrefix(path, "/index"):
-		base = routes.Search
-	default:
+	// key : user -> value : localhost:8080
+	baseURL, ok := route.RouteMap[key]
+	if !ok {
 		return "", false
 	}
 
-	return base + path, true
+	return baseURL + path, true
 }

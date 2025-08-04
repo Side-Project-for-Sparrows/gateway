@@ -9,18 +9,19 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"sync/atomic"
 	"time"
 
+	"github.com/Side-Project-for-Sparrows/gateway/config"
 	jwtConfig "github.com/Side-Project-for-Sparrows/gateway/config/jwt"
-	"github.com/Side-Project-for-Sparrows/gateway/lifecycle"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type jwtInitializer struct{}
 
 func init() {
-	lifecycle.Register(&jwtInitializer{})
+	config.Register(&jwtInitializer{})
 }
 
 func (j *jwtInitializer) Construct() error {
@@ -30,8 +31,6 @@ func (j *jwtInitializer) Construct() error {
 }
 
 func Initialize() {
-	fetchAndParse()
-
 	go func() {
 		for {
 			fetchAndParse()
@@ -134,4 +133,14 @@ func parseRSAPublicKeyFromPEM(pemBytes []byte) (*rsa.PublicKey, error) {
 		return nil, errors.New("not RSA public key")
 	}
 	return rsaPub, nil
+}
+
+// jwt 인증 불필요 여부 확인
+func IsExcluded(path string) bool {
+	for _, excluded := range jwtConfig.Config.ExcludedPaths {
+		if strings.HasPrefix(path, excluded) {
+			return true
+		}
+	}
+	return false
 }

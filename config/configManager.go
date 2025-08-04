@@ -1,8 +1,8 @@
 package config
 
 import (
+	"fmt"
 	"log"
-	"os"
 )
 
 var configLoaders []Configurable
@@ -12,14 +12,9 @@ func RegisterConfig(c Configurable) {
 }
 
 func InitAll() {
-	env := os.Getenv("ENV")
-	if env == "" {
-		env = "dev" // 기본값 fallback
-		log.Println("ENV not set, using default: dev")
-	}
-
+	fmt.Print("INIT TOTAL START")
 	for _, loader := range configLoaders {
-		if err := loader.Init(env); err != nil {
+		if err := loader.Init(); err != nil {
 			log.Fatalf("config init failed: %v", err)
 		}
 	}

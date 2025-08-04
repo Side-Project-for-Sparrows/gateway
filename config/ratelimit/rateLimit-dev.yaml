@@ -1,1 +1,9 @@
-limit: 20000
+slidingWindow:
+  requestsPerSecond: 2
+  windowSize: 1s
+  cleanInterval: 10s
+
+tokenBucket:
+  bucketCapacity: 10
+  bucketRefillRate: 2
+  cleanInterval: 10s

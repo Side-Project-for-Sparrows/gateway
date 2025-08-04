@@ -1,5 +1,4 @@
-// lifecycle/manager.go
-package lifecycle
+package config
 
 import (
 	"log"
@@ -13,6 +12,7 @@ func Register(c Constructable) {
 }
 
 func ConstructAll() {
+	log.Printf("CONSTURCT INIT")
 	env := os.Getenv("ENV")
 	if env == "" {
 		env = "dev"

@@ -10,7 +10,9 @@ func InitRoute() *mux.Router {
 	r := mux.NewRouter()
 
 	api := r.PathPrefix("/").Subrouter()
-	api.Use(middleware.ParellelRootMiddlewareHandler)
+	api.Use(middleware.RootMiddlewareHandler)
+
+	//api.Use(middleware.ParellelRootMiddlewareHandler)
 	//api.Use(middleware.SerialRootMiddlewareHandler)
 
 	//미들웨어 실행시간 측정용 더미 핸들러

@@ -6,22 +6,14 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Side-Project-for-Sparrows/gateway/internal/jwtutil"
 	"github.com/Side-Project-for-Sparrows/gateway/internal/middleware/middlewaretype"
+	"github.com/Side-Project-for-Sparrows/gateway/internal/middleware/security/jwtutil"
 )
-
-var excludedPaths = map[string]bool{
-	"/user/auth/login":   true,
-	"/user/auth/join":    true,
-	"/user/auth/refresh": true,
-	"/index/school":      true,
-	"/dummy":             true,
-}
 
 func JWTAuthMiddleware() middlewaretype.Middleware {
 	return func(input middlewaretype.MiddlewareInput) (*middlewaretype.HeaderPatch, error) {
 		// 요청 경로에서 인증 제외 대상이면 패스
-		if excludedPaths[input.Path()] {
+		if jwtutil.IsExcluded(input.Path()) {
 			return nil, nil
 		}
 

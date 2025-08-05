@@ -1,7 +1,6 @@
 package slidingwindow
 
 import (
-	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -15,9 +14,6 @@ type SlidingWindowLimiter struct {
 }
 
 func NewRateLimiter() *SlidingWindowLimiter {
-	fmt.Printf("CLEAN INTERVAL: %+v\n", ratelimit.Config.TokenBucket.CleanInterval)
-	fmt.Printf("CLEAN INTERVAL: %+v\n", ratelimit.Config.SlidingWindow.CleanInterval)
-
 	s := &SlidingWindowLimiter{
 		interval: ratelimit.Config.SlidingWindow.CleanInterval,
 	}

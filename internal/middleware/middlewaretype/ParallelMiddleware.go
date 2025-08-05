@@ -1,7 +1,6 @@
 package middlewaretype
 
 import (
-	"context"
 	"sync"
 )
 
@@ -20,9 +19,6 @@ func (pc *ParallelMiddleware) AndThen(mw Middleware) *ParallelMiddleware {
 
 // 락없는 구현
 func (pc *ParallelMiddleware) Execute(input MiddlewareInput) ([]*HeaderPatch, error) {
-	_, cancel := context.WithCancel(input.Ctx())
-	defer cancel()
-
 	patches := make([]*HeaderPatch, len(pc.middlewares))
 	errOnce := sync.Once{}
 	var errRet error
@@ -38,11 +34,9 @@ func (pc *ParallelMiddleware) Execute(input MiddlewareInput) ([]*HeaderPatch, er
 			if err != nil {
 				errOnce.Do(func() {
 					errRet = err
-					cancel()
 				})
 				return
 			}
-
 			patches[idx] = patch // mutex등 없이 race contition 방지하기 위해 배열로 저장
 		}(i, mw)
 	}
@@ -65,8 +59,6 @@ func (pc *ParallelMiddleware) Execute(input MiddlewareInput) ([]*HeaderPatch, er
 
 // 락있는 구현
 func (pc *ParallelMiddleware) Execute1(input MiddlewareInput) ([]*HeaderPatch, error) {
-	_, cancel := context.WithCancel(input.Ctx())
-	defer cancel()
 
 	var (
 		mu      sync.Mutex
@@ -85,7 +77,6 @@ func (pc *ParallelMiddleware) Execute1(input MiddlewareInput) ([]*HeaderPatch, e
 			if err != nil {
 				errOnce.Do(func() {
 					errRet = err
-					cancel()
 				})
 				return
 			}

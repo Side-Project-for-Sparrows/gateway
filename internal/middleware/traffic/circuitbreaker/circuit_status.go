@@ -22,41 +22,35 @@ type CircuitState struct {
 
 func (cs *CircuitState) Next(c *Circuit) CircuitStatusType {
 	if cs.stateType == Closed {
-		log.Printf("GRADE!!!!!!!!!!!!! %.4f", c.getGrade())
+		log.Printf("CLOSED!!!!!!!!!!!!! %.6f", c.getGrade())
 
-		log.Printf("STATUS!!!!!!!!!!!!! CLOSED")
-
-		if c.getGrade() < float64(0.9) {
+		if c.getGrade() < float64(0.0011) { // 최근 5회중 2회 이상 성공 못할시 Open 상태 전이 0,1
 			return Open
 		}
 		return Closed
 	}
 
 	if cs.stateType == Open {
-		log.Printf("GRADE!!!!!!!!!!!!! %.4f", c.getGrade())
+		log.Printf("OPEN!!!!!!!!!!!!! %.6f", c.getGrade())
 
-		log.Printf("STATUS!!!!!!!!!!!!! OPEN")
-
-		if c.getGrade() > float64(0.9) {
+		if c.getGrade() >= float64(0.0111) { // 최근 5회 요청중 3회이상 성공시 Half Open 상태 전환 3,4,5
 			return HalfOpen
 		}
 		return Open
 	}
 
 	if cs.stateType == HalfOpen {
-		log.Printf("GRADE!!!!!!!!!!!!! %.4f", c.getGrade())
+		log.Printf("HALF!!!!!!!!!!!!! %.6f", c.getGrade())
 
-		log.Printf("STATUS!!!!!!!!!!!!! HALF")
-
-		if c.getGrade() > float64(1) {
+		if c.getGrade() >= float64(1.1111) { // 최근 5회요청 모두 성공하면 Close 상태 전환 5
 			return Closed
 		}
 
-		if c.getGrade() < float64(0.9) {
+		if c.getGrade() < float64(0.0011) { // 최근 5회 요청중 2회 이상 성공하지 못했으면 Open 상태 전환 0,1
 			return Open
 		}
 
-		return HalfOpen
+		return HalfOpen // 최근 요청 5회중 2,3,4 인경우 half open 유지
 	}
 
 	return Open
@@ -64,17 +58,14 @@ func (cs *CircuitState) Next(c *Circuit) CircuitStatusType {
 
 func (cs *CircuitState) IsHealthy() bool {
 	if cs.stateType == Closed {
-		log.Printf("THIS IS CLOSE")
 		return true
 	}
 
 	if cs.stateType == Open {
-		log.Printf("THIS IS OPEN")
 		return false
 	}
 
 	if cs.stateType == HalfOpen {
-		log.Printf("THIS IS HALF")
 		return rnd.Intn(2) == 0 // 50% 확률로 true 반환
 	}
 

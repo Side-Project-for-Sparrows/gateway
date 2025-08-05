@@ -17,8 +17,6 @@ func JWTAuthMiddleware() middlewaretype.Middleware {
 			return nil, nil
 		}
 
-		log.Printf("[JWT] input.Path=%v", input.Path())
-		log.Printf("[JWT] input.HEADER=%q", input.Headers())
 		authHeader := input.Headers().Get("Authorization")
 		if !strings.HasPrefix(authHeader, "Bearer ") {
 			log.Print("엑세스토큰 없음")
@@ -32,8 +30,6 @@ func JWTAuthMiddleware() middlewaretype.Middleware {
 			log.Print("유효하지 않은 토큰")
 			return nil, fmt.Errorf("unauthorized: invalid token")
 		}
-
-		log.Printf("인증된 유저 ID: %d", userID)
 
 		return &middlewaretype.HeaderPatch{
 			RequestAdd: http.Header{

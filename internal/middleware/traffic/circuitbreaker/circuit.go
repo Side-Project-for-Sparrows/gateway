@@ -28,12 +28,8 @@ type Circuit struct {
 
 func NewCircuit(url string) *Circuit {
 	c := &Circuit{
-		url:    url,
+		url:    strings.TrimPrefix(url, "http://"),
 		events: list.New(),
-	}
-
-	if strings.HasPrefix(c.url, "http://localhost:") {
-		c.url = strings.Replace(c.url, "http://localhost", "127.0.0.1", 1)
 	}
 
 	c.state.Store(&CircuitState{stateType: Closed})

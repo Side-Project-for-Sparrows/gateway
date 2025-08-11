@@ -4,6 +4,6 @@ slidingWindow:
   cleanInterval: 10s
 
 tokenBucket:
-  bucketCapacity: 1000
+  bucketCapacity: 10
   bucketRefillRate: 2
   cleanInterval: 10s

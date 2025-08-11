@@ -30,7 +30,7 @@ func init() {
 func ClientRateLimitMiddleware() middlewaretype.Middleware {
 	return func(input middlewaretype.MiddlewareInput) (*middlewaretype.HeaderPatch, error) {
 		ip := extractIP(input)
-
+		log.Printf("client rate limit")
 		if ClientLimiter.IsOverLimit(ip, time.Now()) {
 			log.Printf("[RateLimit] ip=%s blocked", ip)
 			return &middlewaretype.HeaderPatch{}, fmt.Errorf("rate limit exceeded of client")

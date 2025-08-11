@@ -1,9 +1,9 @@
 slidingWindow:
-  requestsPerSecond: 2
+  requestsPerSecond: 3
   windowSize: 1s
   cleanInterval: 10s
 
 tokenBucket:
-  bucketCapacity: 10
+  bucketCapacity: 1000
   bucketRefillRate: 2
   cleanInterval: 10s

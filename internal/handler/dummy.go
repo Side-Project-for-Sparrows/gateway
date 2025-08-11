@@ -1,7 +1,11 @@
 package handler
 
-import "net/http"
+import (
+	"log"
+	"net/http"
+)
 
 // dummyHandler는 실제 HTTP 호출 없이 즉시 종료함
 func DummyHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("dummy")
 }

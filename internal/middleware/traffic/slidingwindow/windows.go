@@ -2,97 +2,90 @@ package slidingwindow
 
 import (
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/Side-Project-for-Sparrows/gateway/config/ratelimit"
 )
 
 type Windows struct {
-	Curr       atomic.Pointer[Window]
-	Prev       atomic.Pointer[Window]
-	lastAccess atomic.Int64 // UnixNano
+	CurrCount  int
+	PrevCount  int
+	CurrTime   time.Time
+	lastAccess int64 // UnixNano
 	Mu         sync.Mutex
 }
 
-func (ws *Windows) Refresh() *Windows {
-	ws.Mu.Lock()
-	defer ws.Mu.Unlock()
+func (ws *Windows) refresh(now time.Time) *Windows {
+	//log.Printf("before refresh curr is %d prev count is %d currcount is %d", ws.CurrTime.Second(), ws.PrevCount, ws.CurrCount)
 
-	now := time.Now()
-	curr := ws.Curr.Load()
-
-	// 예외 처리
-	if curr == nil {
-		return newWindows(now)
+	if now.After(ws.CurrTime.Add(2 * ratelimit.Config.SlidingWindow.WindowSize)) {
+		//log.Printf("cur is total new")
+		ws.newWindows(now)
+	} else if now.After(ws.CurrTime.Add(ratelimit.Config.SlidingWindow.WindowSize)) {
+		//log.Printf("cur is shift")
+		ws.shift(now)
 	}
 
-	if now.After(curr.Time.Add(2 * ratelimit.Config.SlidingWindow.WindowSize)) {
-		return newWindows(now)
-	}
-
-	if now.After(curr.Time.Add(ratelimit.Config.SlidingWindow.WindowSize)) {
-		return shift(curr, now)
-	}
-
-	curr.Increment()
-
-	ws.lastAccess.Store(time.Now().UnixNano())
+	ws.CurrCount++
+	//log.Printf("after refresh curr is %d prev count is %d currcount is %d", ws.CurrTime.Second(), ws.PrevCount, ws.CurrCount)
+	ws.lastAccess = time.Now().UnixNano()
 	return ws
 }
 
-func (ws *Windows) IsOverRateLimit() bool {
-	t := time.Now()
-
-	return ws.requestAt(t) >= int(ratelimit.Config.SlidingWindow.RequestsPerSecond*ratelimit.Config.SlidingWindow.WindowSize.Seconds())
+func (ws *Windows) IsOverRateLimit(now time.Time) bool {
+	ws.Mu.Lock()
+	defer ws.Mu.Unlock()
+	//log.Printf("ratelimit start at time %d", now.Second())
+	ws.refresh(now)
+	return ws.requestAt(now) >= ratelimit.Config.SlidingWindow.RequestsPerSecond*ratelimit.Config.SlidingWindow.WindowSize.Seconds()
 }
 
-func (ws *Windows) requestAt(t time.Time) int {
-	curr := ws.Curr.Load()
-	prev := ws.Prev.Load()
-
-	if curr == nil || prev == nil {
-		return 0
-	}
-
-	currStart := curr.Time
+func (ws *Windows) requestAt(t time.Time) float64 {
 	now := t
 
-	if now.Before(currStart) {
+	if now.Before(ws.CurrTime) {
 		return 0
 	}
 
-	elapsed := now.Sub(currStart).Seconds() / ratelimit.Config.SlidingWindow.WindowSize.Seconds()
-
+	elapsed := now.Sub(ws.CurrTime).Seconds() / ratelimit.Config.SlidingWindow.WindowSize.Seconds()
+	//log.Printf("elapsed is %.5f", elapsed)
 	if elapsed >= 1.0 {
-		return int(curr.Count.Load())
+		return float64(ws.CurrCount)
 	}
 
-	currCount := float64(curr.Count.Load())
-	prevCount := float64(prev.Count.Load())
+	currCount := float64(ws.CurrCount)
+	prevCount := float64(ws.PrevCount)
+
+	//log.Printf("curr is %d prev count is %d currcount is %d", ws.CurrTime.Second(), ws.PrevCount, ws.CurrCount)
 
 	rate := currCount + prevCount*(1.0-elapsed)
-	return int(rate + 0.5) // 반올림
+	//log.Printf("rate is %.5f", rate)
+
+	return rate
 }
 
 func newWindows(t time.Time) *Windows {
-	now := truncate(t)
-
 	ws := &Windows{}
-	ws.Prev.Store(newWindow(now.Add(-ratelimit.Config.SlidingWindow.WindowSize)))
-	ws.Curr.Store(newWindow(now))
-
-	ws.lastAccess.Store(time.Now().UnixNano())
+	ws.newWindows(t)
 	return ws
 }
 
-func shift(prev *Window, t time.Time) *Windows {
+func (ws *Windows) newWindows(t time.Time) {
 	now := truncate(t)
 
-	ws := &Windows{}
-	ws.Prev.Store(prev)
-	ws.Curr.Store(newWindow(now))
-	return ws
+	ws.PrevCount = 0
+	ws.CurrCount = 0
+	ws.CurrTime = now
+	ws.lastAccess = time.Now().UnixNano()
+}
+
+func (ws *Windows) shift(t time.Time) {
+	now := truncate(t)
+
+	ws.PrevCount = ws.CurrCount
+	ws.CurrCount = 0
+	ws.CurrTime = now
+	ws.lastAccess = time.Now().UnixNano()
 }
 
 func truncate(time time.Time) time.Time {
@@ -100,5 +93,5 @@ func truncate(time time.Time) time.Time {
 }
 
 func (ws *Windows) isOld(now time.Time) bool {
-	return now.Sub(time.Unix(0, ws.lastAccess.Load())) > 2*ratelimit.Config.SlidingWindow.WindowSize
+	return now.Sub(time.Unix(0, ws.lastAccess)) > 2*ratelimit.Config.SlidingWindow.WindowSize
 }

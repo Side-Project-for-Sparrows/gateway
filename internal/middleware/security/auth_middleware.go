@@ -27,7 +27,7 @@ func JWTAuthMiddleware() middlewaretype.Middleware {
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		userID, err := jwtutil.VerifyToken(tokenString)
 		if err != nil {
-			log.Print("유효하지 않은 토큰")
+			log.Print("유효하지 않은 토큰 %s", tokenString)
 			return nil, fmt.Errorf("unauthorized: invalid token")
 		}
 

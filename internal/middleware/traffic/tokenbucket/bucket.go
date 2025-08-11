@@ -40,12 +40,13 @@ func (b *Bucket) TryRequest() bool {
 		go b.refill(now)
 	}
 
-	if b.Tokens.Load() <= 0 {
-		return false
+	new := b.Tokens.Add(-1)
+	if new >= 0 {
+		return true
 	}
 
-	b.Tokens.Add(-1)
-	return true
+	b.Tokens.Add(1)
+	return false
 }
 
 func (b *Bucket) refill(now time.Time) {

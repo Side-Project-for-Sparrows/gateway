@@ -13,8 +13,8 @@ func InitRoute() *mux.Router {
 	api.Use(middleware.RootMiddlewareHandler)
 
 	//미들웨어 실행시간 측정용 더미 핸들러
-	//api.PathPrefix("/dummy").HandlerFunc(handler.DummyHandler)
-	api.PathPrefix("/").HandlerFunc(handler.LoggingWrapper(handler.ProxyHandler))
+	api.PathPrefix("/user/dummy").HandlerFunc(handler.DummyHandler)
+	//api.PathPrefix("/").HandlerFunc(handler.LoggingWrapper(handler.ProxyHandler))
 
 	return r
 }

@@ -27,10 +27,10 @@ func (s *SlidingWindowLimiter) IsOverLimit(target string, now time.Time) bool {
 		newEntry := newWindows(now)
 		val, _ = s.windows.LoadOrStore(target, newEntry)
 	}
-
+	log.Printf("sliding")
 	ws := val.(*Windows)
-	ws.Refresh()
-	return ws.IsOverRateLimit()
+
+	return ws.IsOverRateLimit(now)
 }
 
 func (s *SlidingWindowLimiter) startCleanupLoop() {

@@ -1,5 +1,5 @@
 slidingWindow:
-  requestsPerSecond: 2
+  requestsPerSecond: 3
   windowSize: 1s
   cleanInterval: 10s
 

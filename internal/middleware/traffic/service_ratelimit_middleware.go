@@ -7,7 +7,7 @@ import (
 
 	"github.com/Side-Project-for-Sparrows/gateway/config"
 	"github.com/Side-Project-for-Sparrows/gateway/internal/middleware/middlewaretype"
-	"github.com/Side-Project-for-Sparrows/gateway/internal/middleware/traffic/slidingwindow"
+	"github.com/Side-Project-for-Sparrows/gateway/internal/middleware/traffic/tokenbucket"
 	"github.com/Side-Project-for-Sparrows/gateway/internal/util"
 )
 
@@ -18,7 +18,7 @@ type ServiceRateLimiterInitializer struct{}
 func (c *ServiceRateLimiterInitializer) Construct() error {
 	log.Println("[Construct] ServiceRateLimiter Initialize 호출")
 
-	ServiceLimiter = slidingwindow.NewRateLimiter()
+	ServiceLimiter = tokenbucket.NewRateLimiter()
 	return nil
 }
 

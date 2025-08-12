@@ -43,11 +43,19 @@ func ClientRateLimitMiddleware() middlewaretype.Middleware {
 func extractIP(input middlewaretype.MiddlewareInput) string {
 	h := input.Headers()
 	xff := h.Get("X-Forwarded-For")
+	log.Printf("xff is " + xff)
 
 	if xff != "" {
 		parts := strings.Split(xff, ",")
+		// for str := range parts {
+		// 	log.Printf("HI")
+		// }
 		return strings.TrimSpace(parts[0])
 	}
+
+	log.Printf("header is " + input.RemoteAddr().ip))
+	log.Printf("remote is " + input.RemoteAddr())
+
 	ip, _, err := net.SplitHostPort(input.RemoteAddr())
 	if err != nil {
 		return input.RemoteAddr()

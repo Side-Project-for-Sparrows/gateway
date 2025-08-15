@@ -28,6 +28,6 @@ if $DEBUG_MODE; then
   echo "debug mode init..."
   dlv debug main.go
 else
-  ENV=dev go run main.go -cert-dir=./etc/tls
+  CERT_DIR=./etc/tls ENV=dev go run main.go
 fi
 

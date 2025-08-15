@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 # ---------- Defaults ----------
-: "${OUT_DIR:=.}"        # output dir
+: "${OUT_DIR:=./etc/tls}"        # output dir
 : "${DAYS:=3650}"               # 10 years
 : "${CA_CN:=Local Dev CA}"      # local CA CN
 : "${CN:=localhost}"            # server cert CN
